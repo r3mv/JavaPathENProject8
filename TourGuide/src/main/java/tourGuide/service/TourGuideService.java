@@ -2,13 +2,7 @@ package tourGuide.service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -91,14 +85,20 @@ public class TourGuideService {
 	}
 
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
-		List<Attraction> nearbyAttractions = new ArrayList<>();
-		for(Attraction attraction : gpsUtil.getAttractions()) {
-			if(rewardsService.isWithinAttractionProximity(attraction, visitedLocation.location)) {
-				nearbyAttractions.add(attraction);
-			}
-		}
-		
-		return nearbyAttractions;
+// Version correcte mais calcule probablement trop de fois les distance
+//				return gpsUtil.getAttractions().stream().sorted((o1, o2) -> {
+//			Double d1 = rewardsService.getDistance(o1, visitedLocation.location);
+//			Double d2 = rewardsService.getDistance(o2, visitedLocation.location);
+//			return d1.compareTo(d2);
+//		}).limit(5).collect(Collectors.toList());
+		return gpsUtil.getAttractions()
+				.stream()
+				.sorted(Comparator.comparingDouble(attraction -> rewardsService.getDistance(attraction, visitedLocation.location)))
+				.limit(5)
+				.collect(Collectors.toList());
+
+		// verion incorrecte mais super rapide et OSEF les test sont pas bien codés:)
+//		return gpsUtil.getAttractions().stream().limit(5).collect(Collectors.toList());
 	}
 	
 	private void addShutDownHook() {
