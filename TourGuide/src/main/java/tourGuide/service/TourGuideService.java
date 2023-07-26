@@ -85,20 +85,24 @@ public class TourGuideService {
 	}
 
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
-// Version correcte mais calcule probablement trop de fois les distance
-//				return gpsUtil.getAttractions().stream().sorted((o1, o2) -> {
-//			Double d1 = rewardsService.getDistance(o1, visitedLocation.location);
-//			Double d2 = rewardsService.getDistance(o2, visitedLocation.location);
-//			return d1.compareTo(d2);
-//		}).limit(5).collect(Collectors.toList());
-		return gpsUtil.getAttractions()
-				.stream()
-				.sorted(Comparator.comparingDouble(attraction -> rewardsService.getDistance(attraction, visitedLocation.location)))
+		// Step 1: Compute distances for all attractions relative to visitedLocation
+		Map<String, Double> attractionDistances =
+				gpsUtil.getAttractions()
+						.parallelStream()
+						.collect(Collectors.toMap(
+								attraction -> attraction.attractionName,
+								attraction -> rewardsService.getDistance(attraction, visitedLocation.location)
+						));
+		// Step 2: Sort attractions based on the pre-computed distances
+		List<Attraction> closestAttractions = gpsUtil.getAttractions().stream()
+				.sorted((o1, o2) -> {
+					Double d1 = attractionDistances.get(o1.attractionName);
+					Double d2 = attractionDistances.get(o2.attractionName);
+					return d1.compareTo(d2);
+				})
 				.limit(5)
 				.collect(Collectors.toList());
-
-		// verion incorrecte mais super rapide et OSEF les test sont pas bien codés:)
-//		return gpsUtil.getAttractions().stream().limit(5).collect(Collectors.toList());
+		return closestAttractions;
 	}
 	
 	private void addShutDownHook() {
