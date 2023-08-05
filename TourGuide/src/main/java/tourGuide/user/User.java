@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 import gpsUtil.location.VisitedLocation;
+import org.slf4j.LoggerFactory;
 import tripPricer.Provider;
 
 public class User {
@@ -59,6 +60,7 @@ public class User {
 	
 	public void addToVisitedLocations(VisitedLocation visitedLocation) {
 		visitedLocations.add(visitedLocation);
+		LoggerFactory.getLogger(User.class).debug("Added location to user {} in thread {}" , userName, Thread.currentThread().getName());
 	}
 	
 	public List<VisitedLocation> getVisitedLocations() {

@@ -2,7 +2,12 @@ package tourGuide.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import gpsUtil.GpsUtil;
@@ -15,6 +20,8 @@ import tourGuide.user.UserReward;
 
 @Service
 public class RewardsService {
+
+	private Logger LOG = LoggerFactory.getLogger(RewardsService.class);
     private static final double STATUTE_MILES_PER_NAUTICAL_MILE = 1.15077945;
 
 	// proximity in miles
@@ -38,20 +45,28 @@ public class RewardsService {
 	}
 	
 	public void calculateRewards(User user) {
+		long start = System.currentTimeMillis();
+		List<CompletableFuture<Void>> list = new ArrayList<>();
 		List<VisitedLocation> userLocations = new ArrayList(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
-		
+
 		for(VisitedLocation visitedLocation : userLocations) {
 			for(Attraction attraction : attractions) {
 				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
 					if(nearAttraction(visitedLocation, attraction)) {
-						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+						list.add(CompletableFuture.runAsync(() -> {
+							user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+						}));
 					}
 				}
 			}
 		}
+		CompletableFuture.anyOf(list.toArray(new CompletableFuture[list.size()])).thenRun(() -> {
+			long end = System.currentTimeMillis();
+			LOG.debug("Rewards for user {} computed in {} ms with {} locations and {} attractions", user.getUserName(), (end - start), userLocations.size(), attractions.size());
+		});
 	}
-	
+
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {
 		return getDistance(attraction, location) > attractionProximityRange ? false : true;
 	}

@@ -2,13 +2,11 @@ package tourGuide;
 
 import static org.junit.Assert.assertTrue;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -23,7 +21,10 @@ import tourGuide.user.User;
 import tourGuide.user.UserReward;
 
 public class TestPerformance {
-	
+	@BeforeClass
+	public static void init () {
+		Locale.setDefault(Locale.US);
+	}
 	/*
 	 * A note on performance improvements:
 	 *     
@@ -44,22 +45,22 @@ public class TestPerformance {
 	 *          assertTrue(TimeUnit.MINUTES.toSeconds(20) >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
 	 */
 	
-	@Ignore
+//	@Ignore
 	@Test
-	public void highVolumeTrackLocation() {
+	public void highVolumeTrackLocation() throws InterruptedException {
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 		// Users should be incremented up to 100,000, and test finishes within 15 minutes
-		InternalTestHelper.setInternalUserNumber(100);
-		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
+		InternalTestHelper.setInternalUserNumber(100000);
 
-		List<User> allUsers = new ArrayList<>();
-		allUsers = tourGuideService.getAllUsers();
-		
 	    StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
-		for(User user : allUsers) {
-			tourGuideService.trackUserLocation(user);
+		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
+		int count = 0;
+		while (count != InternalTestHelper.getInternalUserNumber()) {
+			count = tourGuideService.getAllUsers().stream().mapToInt(user -> user.getVisitedLocations().size() >= 4 ? 1 : 0).sum();
+			System.out.println(count + " users tracked so far");
+			TimeUnit.SECONDS.sleep(3);
 		}
 		stopWatch.stop();
 		tourGuideService.tracker.stopTracking();

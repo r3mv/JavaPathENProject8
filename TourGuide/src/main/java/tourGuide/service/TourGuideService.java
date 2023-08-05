@@ -24,7 +24,17 @@ import tripPricer.TripPricer;
 @Service
 public class TourGuideService {
 	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
+
+	public GpsUtil getGpsUtil() {
+		return gpsUtil;
+	}
+
 	private final GpsUtil gpsUtil;
+
+	public RewardsService getRewardsService() {
+		return rewardsService;
+	}
+
 	private final RewardsService rewardsService;
 	private final TripPricer tripPricer = new TripPricer();
 	public final Tracker tracker;
